@@ -1,4 +1,4 @@
-''' This code is meant to test the valves of the Agrobot to ensure that the correct valve is turned on based on the array/string received from Imagerec
+''' This code is meant to test the valves of the Agrobot to ensure that the correct valve is turned on based on the string received from Imagerec
     This utilizes the python package "PYFIRMATA()" to communicate with the arduino and uses values of 0 (OFF) or 1 (ON) to represent the valves
     
     Author: Rajalakshmi Narasimhan (rajalakshmi.nr6@gmail.com)
@@ -26,14 +26,13 @@ if __name__ == '__main__':
 
     #defining constant values
     spraytime = 1 #the time for which the sprayer should spray
-    delaytime = 1
     ON = 1
     OFF = 0
-    no_of_valves = 8
+    no_of_valves = 9
 
     #defining some lists/arrays that we use
-    pin_nos = [4, 5, 6, 7, 8, 9, 10, 11] # pin 13 had an issue in our arduino; replace with appropisate PIN nos
-    valve_array = []
+    pin_nos = [3,4,5,6,7,8,9,10,11] # information about the pins that are connected
+    valve_array = [] #will link the valve number to the pin that it corresponds to          Ex: [VALVE1,VALVE2....] and VALVE1 is set to pin 3 
 
     #setting up pin info for all the valves
     for i in range(no_of_valves):
@@ -49,40 +48,57 @@ if __name__ == '__main__':
     def reset():
         for valve in valve_array:
             valve.write(OFF)
-    
+
+    ''' FUNCTION: all_valves()
+        PARAMETERS: spraytime - Time for which it sprays
+        OBJECTIVE: To spray all the valves in sequence, without receiving an string
+        RETURNS: none 
+    '''
+    def all_valves(spraytime):
+        print("The valve spray test has started")
+        valve_string = "000000000"
+        for index in range(len(valve_string)):
+            print("Now testing valve",index+1)
+            valve_array[index].write(ON)
+            time.sleep(spraytime)       # IN ARDUINO: delay(time)
+            valve_array[index].write(OFF)
+            time.sleep(delaytime)
+
     ''' FUNCTION: turn_on_valve()
-        PARAMETERS: array - It is an array of 0/1 which indicates which valve should be turned on
+        PARAMETERS: string_received - It is a string of 0/1 which indicates which valve should be turned on
                     spraytime - Time for which it sprays
                     delaytime - Time for which it turns off before spraying again
         OBJECTIVE: To spray the correct valve for a fixed time
         RETURNS: none 
     '''
-    def turn_on_valve(array, spraytime,delaytime):
+    def turn_on_valve(string_received, spraytime):
         print("The valve test has started")
-        for index in range(len(array)):
-            valve_status = array[index]
+        for index in range(len(string_received)):
+            valve_status = string_received[index]
             if valve_status == 1:
-                print(valve_status)         #just to verify it is at the correct value 
                 valve_array[index].write(ON)
-                time.sleep(spraytime)       # IN ARDUINO: delay(time)
-                valve_array[index].write(OFF)
-                time.sleep(delaytime)
+        time.sleep(spraytime)       # IN ARDUINO: delay(time)
 
-    ''' Adapted from Gus' code
-        FUNCTION: pulse_valve():
-        PARAMETERS: array - It is an array of 0/1 which indicates which valve should be turned on
+        for index in range(len(string_received)):
+            valve_status = string_received[index]
+            if valve_status == 1:
+                valve_array[index].write(OFF)
+        time.sleep(spraytime)
+
+    ''' FUNCTION: pulse_valve():
+        PARAMETERS: string_received - It is an string of 0/1 which indicates which valve should be turned on
                     intial_spraytime - The start time for which the valve sprays
                     min_spraytime - The minimum spray time
                     percentReduction - The percentage by which thespray time decreases every iteration
                     no_of_pulses - no of pulses for each spray time 
         OBJECTIVE: Pulses specified valve on and off for a given number of times and then reduces the spray time by given percentage
     '''
-    def pulse_valve(array, intial_spraytime=3, min_spraytime=1, percentReduction=25, no_of_pulses=3): #with arbitary default values
+    def pulse_valve(string_received, intial_spraytime=3, min_spraytime=1, percentReduction=25, no_of_pulses=3): #with arbitary default values
         print("Pulse valves test has started")
         spraytime = intial_spraytime
         while spraytime >= min_spraytime:
             for j in range(no_of_pulses):
-                turn_on_valve(array,spraytime)
+                turn_on_valve(string_received,spraytime)
         spraytime -= spraytime*(percentReduction/100)
 
     ''' Adapted from Gus' code
@@ -90,7 +106,7 @@ if __name__ == '__main__':
         PARAMETERS: spraytime - The start time for which the valve sprays
         OBJECTIVE: Turns increasing number of valves on and then off
     '''
-    def maxvalvestest(valve_array, spraytime, delaytime):
+    def maxvalvestest(valve_array, spraytime):
         print("Max valves test has started")
         range_of_valve = []
         for v in range(len(valve_array)): 
@@ -102,10 +118,14 @@ if __name__ == '__main__':
 
     while True: 
         reset()
-        arrayReceived = [0,1,0,0,0,0,0,0]   #the array of 0/1 we receive to know which valve to turn on
-        turn_on_valve(arrayReceived)    # using default values for spraytime, delaytime
+        str_received = "01100000"   #the string of 0/1 we receive to know which valve to turn on
 
-        # pulse_valve(arrayReceived)
+
+
+        #all_valves(spraytime)
+        #turn_on_valve(str_received,spraytime)    
+
+        pulse_valve(str_received)
         # maxvalvestest(valve_array)
 
         reset()
